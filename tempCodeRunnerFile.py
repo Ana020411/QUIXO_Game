@@ -38,7 +38,7 @@ class QuixoBot:
                 col += 1
             board[row][col] = self.symbol
             self.board = copy.deepcopy(board)
-        return self.board
+
     def move_right(self, board, row, col):
         if board[row][col] == self.symbol:
             while col > 0:
@@ -46,7 +46,6 @@ class QuixoBot:
                 col -= 1
             board[row][col] = self.symbol
             self.board = copy.deepcopy(board)
-        return self.board
 
     def move_down(self, board, row, col):
         if board[row][col] == self.symbol:
@@ -55,7 +54,7 @@ class QuixoBot:
                 row -= 1
             board[row][col] = self.symbol
             self.board = copy.deepcopy(board)
-        return self.board
+
     def move_up(self, board, row, col):
         if board[row][col] == self.symbol:
             while row < 4:
@@ -63,7 +62,7 @@ class QuixoBot:
                 row += 1
             board[row][col] = self.symbol
             self.board = copy.deepcopy(board)
-        return self.board
+            
     def __movements(self, row, col):
         movements = []
         if row == 0 and col == 0:
@@ -90,9 +89,10 @@ class QuixoBot:
         movimientos_posibles = self.__movements(row, col)
         print("Movimientos posibles:", movimientos_posibles)
         
-        movimiento_elegido = random.choice(movimientos_posibles)
-        print(f"Movimiento elegido: {movimiento_elegido}")
-        
+        # El jugador elige un movimiento
+        movimiento_elegido = input("¿Qué movimiento quieres hacer?")
+
+
         # Se ejecuta el movimiento elegido
         if movimiento_elegido == "up":
             self.move_down(self.board, row, col)
@@ -115,13 +115,13 @@ class QuixoBot:
 
 
 print(" 0 : Cara neutra / o: Marca de circulo / x: Marca de cruz\n")
-#symbol = input("¿Qué marca quieres? Escribe o/x\n")
+symbol = input("¿Qué marca quieres? Escribe o/x\n")
 
-quixo = QuixoBot('x')
+quixo = QuixoBot(symbol)
 print("Tablero antes de realizar movimientos:")
 quixo.print_board()
 
-print("\nTablero después de realizar el movimiento:")
-
 quixo.movimientos(0, 0)
+
+print("\nTablero después de realizar el movimiento:")
 quixo.print_board()
