@@ -32,38 +32,42 @@ class QuixoBot:
     #CADA FICAH TIENE 3 POSIBLES MOVIMIENTOS POR TURNO 
     "---------------------------------MOVIMIENTOS----------------------------------------"
     def move_left(self, board, row, col):
-        if board[row][col] == self.symbol:
+        if board[row][col] == self.symbol or self.board[row][col] == "-":
             while col < 4:
                 board[row][col] = board[row][col + 1]
                 col += 1
-            board[row][col] = self.symbol
+            self.board[row][4] = self.symbol
             self.board = copy.deepcopy(board)
         return self.board
+    
     def move_right(self, board, row, col):
-        if board[row][col] == self.symbol:
+        if board[row][col] == self.symbol or self.board[row][col] == "-":
             while col > 0:
                 board[row][col] = board[row][col - 1]
                 col -= 1
-            board[row][col] = self.symbol
+            self.board[row][0] = self.symbol
             self.board = copy.deepcopy(board)
         return self.board
 
     def move_down(self, board, row, col):
-        if board[row][col] == self.symbol:
+        if board[row][col] == self.symbol or self.board[row][col] == "-":
             while row > 0:
                 board[row][col] = board[row - 1][col]
                 row -= 1
-            board[row][col] = self.symbol
+            self.board[0][col] = self.symbol
             self.board = copy.deepcopy(board)
         return self.board
+    
     def move_up(self, board, row, col):
-        if board[row][col] == self.symbol:
+        if board[row][col] == self.symbol or self.board[row][col] == "-":
             while row < 4:
                 board[row][col] = board[row + 1][col]
                 row += 1
-            board[row][col] = self.symbol
+            self.board[4][col] = self.symbol
             self.board = copy.deepcopy(board)
         return self.board
+    
+
     def __movements(self, row, col):
         movements = []
         if row == 0 and col == 0:
@@ -95,13 +99,21 @@ class QuixoBot:
         
         # Se ejecuta el movimiento elegido
         if movimiento_elegido == "up":
-            self.move_down(self.board, row, col)
-        elif movimiento_elegido == "down":
             self.move_up(self.board, row, col)
+            
+        elif movimiento_elegido == "down":
+            self.move_down(self.board, row, col)
+            
         elif movimiento_elegido == "left":
-            self.move_right(self.board, row, col)
-        elif movimiento_elegido == "right":
             self.move_left(self.board, row, col)
+            
+        elif movimiento_elegido == "right":
+            self.move_right(self.board, row, col)
+            
+
+        self.board = copy.deepcopy(self.board)
+
+        
             
     "*----------------------------------EJECUCION-----------------------------------"
     def print_board(self):
@@ -124,4 +136,10 @@ quixo.print_board()
 print("\nTablero después de realizar el movimiento:")
 
 quixo.movimientos(0, 0)
+quixo.movimientos(4, 4)
+quixo.movimientos(3, 0)
+quixo.movimientos(0, 1)
+quixo.movimientos(0, 1)
+
+
 quixo.print_board()
