@@ -1,5 +1,6 @@
 import random
 import copy
+from queue import PriorityQueue
 
 class QuixoReferee:
     def __init__(self):
@@ -123,6 +124,54 @@ class QuixoBot:
 
     def reset(self):
         self.board = [["-"]* 5 for _ in range(5)]
+        
+"------------------------------CLASE NODO A*--------------------------------------------------"    
+class Node:
+    def __init__(self, state, path=None):
+        self.state = state
+        self.path = path if path is not None else []
+        self.heuristic = None
+
+    def calculate_heuristic(self, other, heuristic):
+        self.heuristic_value = heuristic(self, other)
+
+    def __eq__(self, other):
+        if not isinstance(other, Node):
+            return False
+        return self.state == other.state
+
+    def __lt__(self, other):
+        if not isinstance(other, Node):
+            return False
+        return self.heuristic_value < other.heuristic_value
+
+    def __gt__(self, other):
+        if not isinstance(other, Node):
+            return False
+        return self.heuristic_value > other.heuristic_value
+        
+class NodeAStar(Node):
+    
+    def __init__(self, state,  path=None):
+        super()._init_(state,  path=path)
+        self.distance = 0
+
+    def _lt_(self, other):
+        if not isinstance(other, NodeAStar):
+            return False
+        return (self.distance + self.heuristic_value) < (other.distance + other.heuristic_value)
+    
+    def _gt_(self, other):
+        if not isinstance(other, NodeAStar):
+            return False
+        return (self.distance + self.heuristic_value) > (other.distance + other.heuristic_value)
+
+"---------------------------HEURISTICA------------------------"
+class Heuristica:
+    @staticmethod
+    def heuristic0(node_a, node_b):
+        return 0
+"---------------------------------A*---------------------------"
 
 
 
