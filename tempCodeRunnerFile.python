@@ -111,15 +111,15 @@ class QuixoReferee:
             pq.put((0, source))
 
             while not pq.empty():
-                _, current = pq.get()
+                _, current_node = pq.get()
                 
-                if current not in visited:
-                    current_board = current.state
+                if current_node not in visited:
+                    current_board = current_node.state
 
                     if self.check_win(current_board, self.symbol):
-                        return current_board, current.path
+                        return current_board, current_node.path
 
-                    visited.append(current)
+                    visited.append(current_node)
 
                     for row in range(5):
                         for col in range(5):
@@ -127,8 +127,8 @@ class QuixoReferee:
                                 movements = self.get_movements(row, col)
                                 for move in movements:
                                     new_board = self.apply_move((row, col, move))
-                                    new_node = NodeAStar(new_board, current.path + [(row, col, move)])
-                                    new_node.distance = current.distance + 1
+                                    new_node = NodeAStar(new_board, current_node.path + [(row, col, move)])
+                                    new_node.distance = current_node.distance + 1
                                     new_node.calculate_heuristic(heuristic)
                                     pq.put((new_node.distance + new_node.heuristic_value, new_node))
                 else:
@@ -187,27 +187,4 @@ class Heuristic:
 
 print(" 0 : Cara neutra / 1: Marca de círculo / -1: Marca de cruz\n")
 
-# Crear un tablero inicial con algunas fichas colocadas
-initial_board = [
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0]
-]
-
-# Colocar algunas fichas en el tablero inicial
-initial_board[0][0] = 1
-
-# Crear una instancia de QuixoReferee con el símbolo del jugador
 quixo = QuixoReferee(1)
-
-print("Tablero inicial:")
-quixo.board = initial_board
-quixo.print_board()
-
-print("\nRealizando un movimiento...")
-quixo.play_turn(quixo.board)
-
-print("\nTablero después de realizar el movimiento:")
-quixo.print_board()
