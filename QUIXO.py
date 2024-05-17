@@ -1,72 +1,60 @@
 import copy
-from queue import PriorityQueue
+import math
 
-class QuixoReferee:
+class Quixxo:
+    "---------------------------------------------  FUNCIONES BASICAS---------------------------------------------------------"
     def __init__(self, symbol):
-       self.board = [[0] * 5 for _ in range(5)]
-       self.symbol = symbol
-       self.movements = []
-
-   # Tomar en cuenta que la ficha no se puede poner en el mismo lugar de donde se sacó
-   # Si para completar la alineación de 5 también se alineó 5 del oponente, pierdes
-
-    def check_win(self, board, symbol):
-       # Se checan filas y columnas
-       for i in range(5):
-           if all(board[i][j] == symbol for j in range(5)) or all(board[j][i] == symbol for j in range(5)):
-               return True
-       # Se checan diagonales
-       if all(board[i][i] == symbol for i in range(5)) or all(board[i][4 - i] == symbol for i in range(5)):
-           return True
-
-       return False
-
-    def play_turn(self, board):
-       new_board, path = self.a_star()
-       if new_board is None:
-           return self.board  # No se encontró una solución
-       else:
-           self.board = new_board
-           return self.board
+        self.board = [[0] * 5 for _ in range(5)]
+        self.movements = []
 
     def reset(self, symbol):
-       self.symbol = symbol
-       self.board = [[0] * 5 for _ in range(5)]
-       self.movements = []
+        self.symbol = symbol
+        self.board = [[0] * 5 for _ in range(5)]
+        self.movements = []
+    
+    def print_board(self):
+        for row in self.board:
+            print(' | '.join(str(cell) for cell in row))
+        print('------------------')
+    
+    "-------------------------------------------------------MOVIMIENTOS---------------------------------------------------------"
 
-    "---------------------------------MOVIMIENTOS----------------------------------------"
     def move_right(self, board, row, col):
-       if board[row][col] == self.symbol or board[row][col] == 0:
-           while col < 4:
-               board[row][col] = board[row][col + 1]
-               col += 1
-           board[row][4] = self.symbol
-       return board
+        if board[row][col] == self.symbol or board[row][col] == 0:
+            new_col = col + 1
+            while new_col < 5 and board[row][new_col] == 0:
+                new_col += 1
+            if new_col < 5:
+                board[row][new_col] = self.symbol
+        return board
 
     def move_left(self, board, row, col):
-       if board[row][col] == self.symbol or board[row][col] == 0:
-           while col > 0:
-               board[row][col] = board[row][col - 1]
-               col -= 1
-           board[row][0] = self.symbol
-       return board
+        if board[row][col] == self.symbol or board[row][col] == 0:
+            new_col = col - 1
+            while new_col >= 0 and board[row][new_col] == 0:
+                new_col -= 1
+            if new_col >= 0:
+                board[row][new_col] = self.symbol
+        return board
 
     def move_up(self, board, row, col):
-       if board[row][col] == self.symbol or board[row][col] == 0:
-           while row > 0:
-               board[row][col] = board[row - 1][col]
-               row -= 1
-           board[0][col] = self.symbol
-       return board
+        if board[row][col] == self.symbol or board[row][col] == 0:
+            new_row = row - 1
+            while new_row >= 0 and board[new_row][col] == 0:
+                new_row -= 1
+            if new_row >= 0:
+                board[new_row][col] = self.symbol
+        return board
 
     def move_down(self, board, row, col):
-       if board[row][col] == self.symbol or board[row][col] == 0:
-           while row < 4:
-               board[row][col] = board[row + 1][col]
-               row += 1
-           board[4][col] = self.symbol
-       return board
-
+        if board[row][col] == self.symbol or board[row][col] == 0:
+            new_row = row + 1
+            while new_row < 5 and board[new_row][col] == 0:
+                new_row += 1
+            if new_row < 5:
+                board[new_row][col] = self.symbol
+        return board
+    "-------------------------------------------------------OBTENER, APLICAR, REVISAR MOVIMIENTOS-------------------------------------"
     def get_movements(self, row, col):
         movements = []
         if row == 0 and col == 0:
@@ -86,17 +74,16 @@ class QuixoReferee:
         elif row == 4 and 1 <= col <= 3:
             movements.extend(["up", "right", "left"])
         else:
-            return "Movimiento inválido. Solo se permiten movimientos en la periferia del tablero."
+            return []  
         return movements
 
-    def apply_move(self, move):
-        row, col, movement = move
-        new_board = copy.deepcopy(self.board)
+    def apply_move(self, board, row, col, movement):
+        new_board = copy.deepcopy(board)  # Crear una copia del tablero para evitar modificar el original
 
         if movement == "down":
             new_board = self.move_down(new_board, row, col)
         elif movement == "up":
-            new_board = self.move_up(new_board, row, col)
+            new_board  = self.move_up(new_board, row, col)
         elif movement == "right":
             new_board = self.move_right(new_board, row, col)
         elif movement == "left":
@@ -104,85 +91,102 @@ class QuixoReferee:
 
         return new_board
 
-    def a_star(self):
-            visited = []
-            pq = PriorityQueue()
-            source = NodeAStar(self.board, path=[])
-            pq.put((0, source))
+    def check_win(self, symbol):
+        # Filas y columnas
+        for i in range(5):
+            if all(self.board[i][j] == symbol for j in range(5)) or all(self.board[j][i] == symbol for j in range(5)):
+                return True
+        # Diagonales
+        if all(self.board[i][i] == symbol for i in range(5)) or all(self.board[i][4 - i] == symbol for i in range(5)):
+            return True
+        
+        return False
 
-            while not pq.empty():
-                _, current = pq.get()
-                
-                if current not in visited:
-                    current_board = current.state
+    "--------------------------------------------------ALGORITMO MINIMAX---------------------------------------------------------------------"
+    
+    def minimax(self, depth, is_maximizing):
+        if self.check_win(-1):  # 'X' wins
+            return -1
+        elif self.check_win(1):  # 'O' wins
+            return 1
+        elif depth == 3:  # Profundidad máxima
+            return Heuristic.heuristic0(self.symbol)
 
-                    if self.check_win(current_board, self.symbol):
-                        return current_board, current.path
+        if is_maximizing:
+            best_score = -math.inf
+            for i in range(5):
+                for j in range(5):
+                    if self.board[i][j] == 0 or self.board[i][j] == self.symbol:
+                        movements = self.get_movements(i, j)
+                        for move in movements:
+                            new_board = self.apply_move(self.board, i, j, move)
+                            new_board[i][j] = 1
+                            score = self.minimax(depth + 1, False)
+                            new_board[i][j] = 0  
+                            best_score = max(score, best_score)
+            return best_score
+        else:
+            best_score = math.inf
+            for i in range(5):
+                for j in range(5):
+                    if self.board[i][j] == 0 or self.board[i][j] == -self.symbol:
+                        movements = self.get_movements(i, j)
+                        for move in movements:
+                            new_board = self.apply_move(self.board, i, j, move)
+                            new_board[i][j] = -1
+                            score = self.minimax(depth + 1, True)
+                            new_board[i][j] = 0  
+                            best_score = min(score, best_score)
+            return best_score
 
-                    visited.append(current)
-
-                    for row in range(5):
-                        for col in range(5):
-                            if current_board[row][col] == self.symbol or current_board[row][col] == 0:
-                                movements = self.get_movements(row, col)
-                                for move in movements:
-                                    new_board = self.apply_move((row, col, move))
-                                    new_node = NodeAStar(new_board, current.path + [(row, col, move)])
-                                    new_node.distance = current.distance + 1
-                                    new_node.calculate_heuristic(current_board, self.symbol)
-                                    pq.put((new_node.distance + new_node.heuristic_value, new_node))
+    def get_best_move(self):
+        best_score = -math.inf
+        best_move = None
+        for i in range(5):
+            for j in range(5):
+                if self.board[i][j] == 0 or self.board[i][j] == self.symbol:
+                    movements = self.get_movements(i, j)
+                    for move in movements:
+                        new_board = self.apply_move(self.board, i, j, move)
+                        new_board[i][j] = 1
+                        score = self.minimax(0, False)
+                        new_board[i][j] = 0  
+                        if score > best_score:
+                            best_score = score
+                            best_move = (i, j, move)
+        return best_move
+    "----------------------------------------------------------------------PARA JUGAR------------------------------------------"
+    def play_turn(self, board):
+        self.board = board
+        self.print_board()
+        while not self.check_win(-1) and not self.check_win(1):
+            best_move = self.get_best_move()
+            if best_move:
+                x, y, move = best_move
+                if self.board[x][y] == 0 or self.board[x][y] == -1: #checar esta condicion!!!!!!!
+                    self.board = self.apply_move(self.board, x, y, move)
+                    self.board[x][y] = 1
+                    self.print_board()
+                    if self.check_win(1):
+                        print("You win!")
+                        break
                 else:
-                    continue
+                    print("invalido")
+            else:
+                print("EMPATE")
+                break
 
-            return None, []
-
-    def print_board(self):
-       for row in self.board:
-           print(' | '.join(str(cell) for cell in row))
-           print('------------------')
-
-class Node:
-    def __init__(self, state, path=None):
-       self.state = state
-       self.path = path if path is not None else []
-       self.heuristic = None
-
-    '''def calculate_heuristic(self, heuristic):
-       self.heuristic_value = heuristic(self)'''
-
-    def calculate_heuristic(self, board, symbol):
-       self.heuristic_value = Heuristic().heuristic1(board, symbol)
-
-    def __eq__(self, other):
-       if not isinstance(other, Node):
-           return False
-       return self.state == other.state
-
-    def __lt__(self, other):
-       if not isinstance(other, Node):
-           return False
-       return self.heuristic_value < other.heuristic_value
-
-    def __gt__(self, other):
-       if not isinstance(other, Node):
-           return False
-       return self.heuristic_value > other.heuristic_value
-
-class NodeAStar(Node):
-   def __init__(self, state, path=None):
-       super().__init__(state, path=path)
-       self.distance = 0
-
-   def __lt__(self, other):
-       if not isinstance(other, NodeAStar):
-           return False
-       return (self.distance + self.heuristic_value) < (other.distance + other.heuristic_value)
-
-   def __gt__(self, other):
-       if not isinstance(other, NodeAStar):
-           return False
-       return (self.distance + self.heuristic_value) > (other.distance + other.heuristic_value)
-
+            best_move = self.get_best_move()
+            if best_move:
+                x, y, move = best_move
+                self.board = self.apply_move(self.board, x, y, move)
+                self.board[x][y] = 1
+                self.print_board()
+            else:
+                print("EMPATE")
+                break
+    
+    "------------------------------------------------------------------HeuristicaS---------------------------------------------------------------"
 class Heuristic:
     @staticmethod
     def heuristic0(node):
@@ -315,30 +319,10 @@ class Heuristic:
         t_table[board_tuple] = heuristic_value
 
         return heuristic_value
+"--------------------------------------------------------IMPLEMENTACION--------------------------------------------"
 
 print(" 0 : Cara neutra / 1: Marca de círculo / -1: Marca de cruz\n")
 
-# Crear un tablero inicial con algunas fichas colocadas
-initial_board = [
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0]
-]
-
-# Colocar algunas fichas en el tablero inicial
-initial_board[0][0] = 1
-
-# Crear una instancia de QuixoReferee con el símbolo del jugador
-quixo = QuixoReferee(1)
-
-print("Tablero inicial:")
-quixo.board = initial_board
-quixo.print_board()
-
-print("\nRealizando un movimiento...")
-quixo.play_turn(quixo.board)
-
-print("\nTablero después de realizar el movimiento:")
-quixo.print_board()
+bot = Quixxo(1)
+initial_board = [[0] * 5 for _ in range(5)]  # Tablero inicial
+bot.play_turn(initial_board)
