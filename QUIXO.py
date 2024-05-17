@@ -6,6 +6,8 @@ class Quixxo:
     def __init__(self, symbol):
         self.board = [[0] * 5 for _ in range(5)]
         self.movements = []
+        self.symbol = symbol
+        self.transposition_table = {}
 
     def reset(self, symbol):
         self.symbol = symbol
@@ -19,66 +21,71 @@ class Quixxo:
     
     "-------------------------------------------------------MOVIMIENTOS---------------------------------------------------------"
 
-    def move_right(self, board, row, col):
-        if board[row][col] == self.symbol or board[row][col] == 0:
-            new_col = col + 1
-            while new_col < 5 and board[row][new_col] == 0:
-                new_col += 1
-            if new_col < 5:
-                board[row][new_col] = self.symbol
-        return board
-
     def move_left(self, board, row, col):
-        if board[row][col] == self.symbol or board[row][col] == 0:
-            new_col = col - 1
-            while new_col >= 0 and board[row][new_col] == 0:
-                new_col -= 1
-            if new_col >= 0:
-                board[row][new_col] = self.symbol
-        return board
+        new_board = copy.deepcopy(board)
+        if new_board[row][col] == self.symbol or new_board[row][col] == 0:
+            while col < 4:
+                new_board[row][col] = new_board[row][col + 1]
+                col += 1
+            new_board[row][4] = self.symbol
 
-    def move_up(self, board, row, col):
-        if board[row][col] == self.symbol or board[row][col] == 0:
-            new_row = row - 1
-            while new_row >= 0 and board[new_row][col] == 0:
-                new_row -= 1
-            if new_row >= 0:
-                board[new_row][col] = self.symbol
-        return board
+        return new_board
+    
+    def move_right(self, board, row, col):
+        new_board = copy.deepcopy(board)
+        if new_board[row][col] == self.symbol or new_board[row][col] == 0:
+            while col > 0:
+                new_board[row][col] = new_board[row][col - 1]
+                col -= 1
+            new_board[row][0] = self.symbol
+
+        return new_board
 
     def move_down(self, board, row, col):
-        if board[row][col] == self.symbol or board[row][col] == 0:
-            new_row = row + 1
-            while new_row < 5 and board[new_row][col] == 0:
-                new_row += 1
-            if new_row < 5:
-                board[new_row][col] = self.symbol
-        return board
-    "-------------------------------------------------------OBTENER, APLICAR, REVISAR MOVIMIENTOS-------------------------------------"
+        new_board = copy.deepcopy(board)
+        if new_board[row][col] == self.symbol or new_board[row][col] == 0:
+            while row > 0:
+                new_board[row][col] = new_board[row - 1][col]
+                row -= 1
+            new_board[0][col] = self.symbol
+
+        return new_board
+    
+    def move_up(self, board, row, col):
+        new_board = copy.deepcopy(board)
+        if new_board[row][col] == self.symbol or new_board[row][col] == 0:
+            while row < 4:
+                new_board[row][col] = new_board[row + 1][col]
+                row += 1
+            new_board[4][col] = self.symbol
+
+        return new_board
+    
+
     def get_movements(self, row, col):
         movements = []
         if row == 0 and col == 0:
-            movements.extend(["down", "right"])
-        elif row == 0 and col == 4:
-            movements.extend(["down", "left"])
-        elif row == 4 and col == 0:
-            movements.extend(["up", "right"])
-        elif row == 4 and col == 4:
             movements.extend(["up", "left"])
+        elif row == 0 and col == 4:
+            movements.extend(["up", "right"])
+        elif row == 4 and col == 0:
+            movements.extend(["down", "left"])
+        elif row == 4 and col == 4:
+            movements.extend(["down", "right"])
         elif 1 <= row <= 3 and col == 0:
-            movements.extend(["down", "up", "right"])
+            movements.extend(["up", "down", "left"])
         elif 1 <= row <= 3 and col == 4:
-            movements.extend(["down", "up", "left"])
+            movements.extend(["up", "down", "right"])
         elif row == 0 and 1 <= col <= 3:
-            movements.extend(["down", "right", "left"])
+            movements.extend(["up", "left", "right"])
         elif row == 4 and 1 <= col <= 3:
-            movements.extend(["up", "right", "left"])
-        else:
-            return []  
+            movements.extend(["down", "left", "right"])
+        elif 1 <= row <= 3 and 1 <= col <= 3:
+            return ("Movimiento invalido. Solo se permiten movimientos en la periferia del tablero ")
         return movements
 
     def apply_move(self, board, row, col, movement):
-        new_board = copy.deepcopy(board)  # Crear una copia del tablero para evitar modificar el original
+        new_board = copy.deepcopy(board)
 
         if movement == "down":
             new_board = self.move_down(new_board, row, col)
@@ -90,6 +97,8 @@ class Quixxo:
             new_board = self.move_left(new_board, row, col)
 
         return new_board
+    
+    
 
     def check_win(self, symbol):
         # Filas y columnas
@@ -104,12 +113,12 @@ class Quixxo:
 
     "--------------------------------------------------ALGORITMO MINIMAX---------------------------------------------------------------------"
     
-    def minimax(self, depth, is_maximizing):
+    def minimax(self, depth, is_maximizing, alpha, beta):
         if self.check_win(-1):  # 'X' wins
             return -1
         elif self.check_win(1):  # 'O' wins
             return 1
-        elif depth == 3:  # Profundidad máxima
+        elif depth == 2:  # Profundidad máxima
             return Heuristic.heuristic0(self.symbol)
 
         if is_maximizing:
@@ -121,9 +130,12 @@ class Quixxo:
                         for move in movements:
                             new_board = self.apply_move(self.board, i, j, move)
                             new_board[i][j] = 1
-                            score = self.minimax(depth + 1, False)
+                            score = self.minimax(depth + 1, False, alpha, beta)
                             new_board[i][j] = 0  
                             best_score = max(score, best_score)
+                            alpha = max(alpha, best_score)
+                            if beta <= alpha:
+                                break
             return best_score
         else:
             best_score = math.inf
@@ -134,14 +146,19 @@ class Quixxo:
                         for move in movements:
                             new_board = self.apply_move(self.board, i, j, move)
                             new_board[i][j] = -1
-                            score = self.minimax(depth + 1, True)
+                            score = self.minimax(depth + 1, True, alpha, beta)
                             new_board[i][j] = 0  
                             best_score = min(score, best_score)
+                            beta = min(beta, best_score)
+                            if beta <= alpha:
+                                break
             return best_score
-
+        
     def get_best_move(self):
         best_score = -math.inf
         best_move = None
+        alpha = -math.inf
+        beta = math.inf
         for i in range(5):
             for j in range(5):
                 if self.board[i][j] == 0 or self.board[i][j] == self.symbol:
@@ -149,42 +166,55 @@ class Quixxo:
                     for move in movements:
                         new_board = self.apply_move(self.board, i, j, move)
                         new_board[i][j] = 1
-                        score = self.minimax(0, False)
+                        score = self.minimax(0, False, alpha, beta)
                         new_board[i][j] = 0  
                         if score > best_score:
                             best_score = score
                             best_move = (i, j, move)
+                            alpha = max(alpha, best_score)
         return best_move
+
     "----------------------------------------------------------------------PARA JUGAR------------------------------------------"
     def play_turn(self, board):
         self.board = board
         self.print_board()
+        
         while not self.check_win(-1) and not self.check_win(1):
+            # Turno del jugador 1 (X)
             best_move = self.get_best_move()
             if best_move:
                 x, y, move = best_move
-                if self.board[x][y] == 0 or self.board[x][y] == -1: #checar esta condicion!!!!!!!
+                if self.board[x][y] == 0 or self.board[x][y] == self.symbol:
                     self.board = self.apply_move(self.board, x, y, move)
-                    self.board[x][y] = 1
                     self.print_board()
-                    if self.check_win(1):
-                        print("You win!")
+                    if self.check_win(self.symbol):
+                        print("Jugador X gana!")
                         break
                 else:
-                    print("invalido")
+                    print("Movimiento inválido")
             else:
-                print("EMPATE")
+                print("Empate")
                 break
 
+            # Turno del jugador -1 (O)
+            self.symbol = -self.symbol  # Cambiar el símbolo para el otro jugador
             best_move = self.get_best_move()
             if best_move:
                 x, y, move = best_move
-                self.board = self.apply_move(self.board, x, y, move)
-                self.board[x][y] = 1
-                self.print_board()
+                if self.board[x][y] == 0 or self.board[x][y] == self.symbol:
+                    self.board = self.apply_move(self.board, x, y, move)
+                    self.print_board()
+                    if self.check_win(self.symbol):
+                        print("Jugador O gana!")
+                        break
+                else:
+                    print("Movimiento inválido")
             else:
-                print("EMPATE")
+                print("Empate")
                 break
+
+            # Cambiar de nuevo el símbolo para el siguiente turno del jugador 1
+            self.symbol = -self.symbol
     
     "------------------------------------------------------------------HeuristicaS---------------------------------------------------------------"
 class Heuristic:
@@ -288,7 +318,7 @@ class Heuristic:
         return sum(map(sum, score_matrix))  # Suma de los scores
     
     # Tablas de transposición
-    def heuristic3(self, board, last_move, symbol, t_table):
+    def heuristic3(self, board, symbol, t_table):
         # Se checa si el resultado se encuentra en la tabla
         board_tuple = tuple(map(tuple, board))
         if board_tuple in t_table:
@@ -298,21 +328,23 @@ class Heuristic:
         player_symbol = symbol
         opponent_symbol = -symbol
 
-        # fila y columna del último movimiento
-        row, col = last_move
-
         # Solo se evalúa la celda que se modificó y sus vecinos
-        for i in range(max(0, row-1), min(5, row+2)):
-            for j in range(max(0, col-1), min(5, col+2)):
+        for i in range(5):
+            for j in range(5):
                 if board[i][j] == 0:
+                    # se inserta la ficha temporalmente
                     board[i][j] = player_symbol
+                    # Checa si el movimiento completa la jugada
                     if self.check_win(board, player_symbol):
                         heuristic_value += 1
+                    # Se checa si el movimiento bloquea la victoria del oponente
                     board[i][j] = opponent_symbol
                     if self.check_win(board, opponent_symbol):
                         heuristic_value -= 1
 
                     heuristic_value += self.check_continuity(board, player_symbol, i, j)
+
+                    # Se regresa el tablero al estado original
                     board[i][j] = 0
 
         # Se guarda el resultado en la tabla de transposición
@@ -325,4 +357,4 @@ print(" 0 : Cara neutra / 1: Marca de círculo / -1: Marca de cruz\n")
 
 bot = Quixxo(1)
 initial_board = [[0] * 5 for _ in range(5)]  # Tablero inicial
-bot.play_turn(initial_board)
+bot.board = bot.play_turn(initial_board)
