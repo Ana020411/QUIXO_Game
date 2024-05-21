@@ -1,6 +1,3 @@
-#  ESTE ES EL QUE SI FUNCIONA PERO NO SABES PORQUÉ
-
-
 import copy
 import math
 
@@ -17,12 +14,12 @@ class Quixxo:
     
     def print_board(self):
         for row in self.board:
-            print(' | '.join(str(cell) for cell in row))
-        print('------------------')
+            print(' | '.join(f"{cell: ^3}" for cell in row))
+        print('---------------------------')
     
     "-------------------------------------------------------MOVIMIENTOS---------------------------------------------------------"
 
-    def move_left(self, board, row, col):
+    def move_right(self, board, row, col):
         new_board = copy.deepcopy(board)
         if new_board[row][col] == self.symbol or new_board[row][col] == 0:
             while col < 4:
@@ -31,7 +28,7 @@ class Quixxo:
             new_board[row][4] = self.symbol
         return new_board
     
-    def move_right(self, board, row, col):
+    def move_left(self, board, row, col):
         new_board = copy.deepcopy(board)
         if new_board[row][col] == self.symbol or new_board[row][col] == 0:
             while col > 0:
@@ -40,7 +37,7 @@ class Quixxo:
             new_board[row][0] = self.symbol
         return new_board
 
-    def move_down(self, board, row, col):
+    def move_up(self, board, row, col):
         new_board = copy.deepcopy(board)
         if new_board[row][col] == self.symbol or new_board[row][col] == 0:
             while row > 0:
@@ -49,7 +46,7 @@ class Quixxo:
             new_board[0][col] = self.symbol
         return new_board
     
-    def move_up(self, board, row, col):
+    def move_down(self, board, row, col):
         new_board = copy.deepcopy(board)
         if new_board[row][col] == self.symbol or new_board[row][col] == 0:
             while row < 4:
@@ -82,30 +79,30 @@ class Quixxo:
 
     def apply_move(self, board, row, col, movement):
         new_board = copy.deepcopy(board)
-        if movement == "down":
-            new_board = self.move_down(new_board, row, col)
-        elif movement == "up":
+        if movement == "up":
             new_board = self.move_up(new_board, row, col)
-        elif movement == "right":
-            new_board = self.move_right(new_board, row, col)
+        elif movement == "down":
+            new_board = self.move_down(new_board, row, col)
         elif movement == "left":
             new_board = self.move_left(new_board, row, col)
+        elif movement == "right":
+            new_board = self.move_right(new_board, row, col)
         return new_board
 
     def undo_move(self, board, row, col, movement):
-        if movement == "down":
+        if movement == "up":
             for i in range(row, 0, -1):
                 board[i][col] = board[i - 1][col]
             board[0][col] = 0
-        elif movement == "up":
+        elif movement == "down":
             for i in range(row, 4):
                 board[i][col] = board[i + 1][col]
             board[4][col] = 0
-        elif movement == "right":
+        elif movement == "left":
             for j in range(col, 0, -1):
                 board[row][j] = board[row][j - 1]
             board[row][0] = 0
-        elif movement == "left":
+        elif movement == "right":
             for j in range(col, 4):
                 board[row][j] = board[row][j + 1]
             board[row][4] = 0
@@ -136,7 +133,7 @@ class Quixxo:
         if is_maximizing:
             best_score = -math.inf
             for i in range(5):
-                for j in range(5):
+                for j in range(5):#CHECAR LOS FORS*****************************
                     if board[i][j] == 0 or board[i][j] == self.symbol:
                         movements = self.get_movements(i, j)
                         for move in movements:
@@ -189,30 +186,41 @@ class Quixxo:
 
     def play_turn(self, board):
         self.board = board
+        player_turn = False
+        fin= False
 
-        while True:
+        while not fin:
             if self.symbol == 1:  # Turno del bot
-                print("Turno del bot")
+                print("********************Turno del bot*************************")
                 best_move = self.get_best_move()
                 if best_move is None:
-                    print("No hay movimientos válidos, empate!")
+                    print("empate!")
+                    fin = True
                     break
-                x, y, move = best_move
-                self.board = self.apply_move(self.board, x, y, move)
-                self.print_board()
-                if self.check_win(self.board, self.symbol):
-                    print(f"Jugador {self.symbol} gana!")
-                    break
+                else:
+                    x, y, move = best_move
+                    self.board = self.apply_move(self.board, x, y, move)
+                    self.print_board()
+                    if self.check_win(self.board, 1):
+                        print(f"Ju0gador 1 gana!")
+                        fin = True
+                        
             else:  # Turno del jugador
-                print("Turno del jugador")
-                x, y, move = input("Introduce fila, columna y dirección (fila columna dirección): ").split()
+                print("=================Turno del jugador===================")
+                x, y = input("Introduce fila, columna (fila columna): ").split()
                 x, y = int(x), int(y)
-                self.board = self.apply_move(self.board, x, y, move)
-                self.print_board()
-                if self.check_win(self.board, -self.symbol):
-                    print(f"Jugador {-self.symbol} gana!")
-                    break
-            
+                movements = self.get_movements(x, y)
+                if movements:
+                    movement = input(f"Movimientos válidos: {', '.join(movements)}. Ingresa tu movimiento: ")
+                    if movement in movements:
+                        self.board = self.apply_move(self.board, x, y, movement)
+                        self.print_board()
+                        if self.check_win(self.board, -1):
+                            print(f"¡Jugador -1 gana!")
+                            fin = True
+                else:
+                    print("Movimiento inválido. Intenta de nuevo.")
+    
             # Cambia de turno
             self.symbol = -self.symbol
 
@@ -300,7 +308,6 @@ class Heuristic:
 
         return continuity_value
         
-
 # Prueba del juego
 print(" 0 : Cara neutra / 1: Marca de círculo / -1: Marca de cruz\n")
 
