@@ -16,8 +16,8 @@ class Quixxo:
     
     def print_board(self):
         for row in self.board:
-            print(' | '.join(str(cell) for cell in row))
-        print('------------------')
+            print(' | '.join(f"{cell: ^3}" for cell in row))
+        print('---------------------------')
     
     "-------------------------------------------------------MOVIMIENTOS---------------------------------------------------------"
 
@@ -118,8 +118,9 @@ class Quixxo:
             return -1
         elif self.check_win(1):  # 'O' wins
             return 1
-        elif depth == 2:  # Profundidad máxima
-            return Heuristic.heuristic0(self.symbol)
+        elif depth == 1:  # Profundidad máxima
+            heuristic = Heuristic()  # Crea una instancia de la clase Heuristic
+            return heuristic.heuristic1(self.board, self.symbol)  
 
         if is_maximizing:
             best_score = -math.inf
