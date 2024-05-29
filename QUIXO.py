@@ -1,13 +1,13 @@
 import copy
 import math
 
-class noche:
+class Opcion1:
     "---------------------------------------------  FUNCIONES BASICAS---------------------------------------------------------"
     def __init__(self, symbol):
        self.board = [[0] * 5 for _ in range(5)]
        self.symbol = symbol
        self.transposition_table = {}
-       self.name = 'caronooo'
+       self.name = 'prueba1'
 
     def reset(self, symbol):
        self.symbol = symbol
@@ -119,7 +119,6 @@ class noche:
        return False
 
     "--------------------------------------------------ALGORITMO MINIMAX---------------------------------------------------------------------"
-
     def minimax(self, board, depth, is_maximizing, alpha, beta):
        state_tuple = tuple(tuple(row) for row in board)
        if state_tuple in self.transposition_table:
@@ -130,7 +129,7 @@ class noche:
        elif self.check_win(board, self.symbol):
            return 1
        elif depth == 1:  
-           return Heuristic.heu(board, self.symbol)
+           return Heuristica.heu(board, self.symbol)
 
        if is_maximizing:
            best_score = -math.inf
@@ -172,6 +171,7 @@ class noche:
                                     break
             self.transposition_table[state_tuple] = best_score
             return best_score
+
         
     def get_best_move(self):
         best_score = -math.inf
@@ -208,90 +208,74 @@ class noche:
         self.print_board() 
                  
         return self.board
-    '''def play_turn(self, board):
-            self.board = board
-            player_turn = False
-            fin= False
+    
+class Heuristica:
+    
+    @staticmethod
+    def count_line(line, symbol):
+        symbol_count = 0
+        empty_count = 0
+        for cell in line:
+            if cell == symbol:
+                symbol_count += 1
+            elif cell == 0:
+                empty_count += 1
+        return symbol_count, empty_count
 
-            while not fin:
-                if self.symbol == 1:  # Turno del bot
-                    print("*Turno del bot")
-                    best_move = self.get_best_move()
-                    if best_move is None:
-                        print("empate!")
-                        fin = True
-                        break
-                    else:
-                        x, y, move = best_move
-                        self.board = self.apply_move(self.board, x, y, move)
-                        self.print_board()
-                        if self.check_win(self.board, 1):
-                            print(f"Ju0gador 1 gana!")
-                            fin = True
-                            
-                else:  # Turno del jugador
-                    print("=================Turno del jugador===================")
-                    x, y = input("Introduce fila, columna (fila columna): ").split()
-                    x, y = int(x), int(y)                
-                    movements = self.get_movements(x, y)
-                    if movements:
-                        movement = input(f"Movimientos válidos: {', '.join(movements)}. Ingresa tu movimiento: ")
-                        if movement in movements:
-            
-                            if self.check_win(self.board, -1):
-                                print(f"¡Jugador -1 gana!")
-                                fin = True
-                    else:
-                        print("Movimiento inválido. Intenta de nuevo.")
-        
-                # Cambia de turno
-                self.symbol = -self.symbol'''
-
-class Heuristic:
-   def heu(board, symbol):
+    @staticmethod
+    def heu(board, symbol):
         score = 0
-
-        # Líneas con 4 symbols 
+        
+        
+        center_positions = {(1, 1), (1, 3), (3, 1), (3, 3)}
+        corner_positions = {(0, 0), (0, 4), (4, 0), (4, 4)}
+        
+    
         for i in range(5):
-            row = [board[i][j] for j in range(5)]
+            row = board[i]
             col = [board[j][i] for j in range(5)]
-            diag1 = [board[j][j] for j in range(5)]
-            diag2 = [board[j][4-j] for j in range(5)]
-
-            # Contar cuántas fichas consecutivas hay en cada línea
-            row_occupied = max(sum(1 for _ in sum([[1], []]*(board[i].count(symbol)==5), [])) for symbol in (symbol, -symbol))
-            col_occupied = max(sum(1 for _ in sum([[1], []]*(col.count(symbol)==5), [])) for symbol in (symbol, -symbol))
-            diag1_occupied = max(sum(1 for _ in sum([[1], []]*(diag1.count(symbol)==5), [])) for symbol in (symbol, -symbol))
-            diag2_occupied = max(sum(1 for _ in sum([[1], []]*(diag2.count(symbol)==5), [])) for symbol in (symbol, -symbol))
-
+            diag1 = [board[i][i] for i in range(5)]
+            diag2 = [board[i][4-i] for i in range(5)]
             
-        if row_occupied == 4 or col_occupied == 4 or diag1_occupied == 4 or diag2_occupied== 4:
-            if symbol == 1:
-                score += 1000
-            else:
-                score -= 1000
+            row_symbol_count, row_empty_count = Heuristica.count_line(row, symbol)
+            col_symbol_count, col_empty_count = Heuristica.count_line(col, symbol)
+            diag1_symbol_count, diag1_empty_count = Heuristica.count_line(diag1, symbol)
+            diag2_symbol_count, diag2_empty_count = Heuristica.count_line(diag2, symbol)
+            
+            for symbol_count, empty_count in [(row_symbol_count, row_empty_count), (col_symbol_count, col_empty_count), 
+                                              (diag1_symbol_count, diag1_empty_count), (diag2_symbol_count, diag2_empty_count)]:
+                if symbol_count == 5:
+                    score += 1000
+                elif symbol_count == 4 and empty_count == 1:
+                    score += 100
+                elif symbol_count == 3 and empty_count == 2:
+                    score += 10
+                elif symbol_count == 2 and empty_count == 3:
+                    score += 5
+                opponent_count = 4 - symbol_count
+                if opponent_count == 4 and empty_count == 1:
+                    score -= 100
+                elif opponent_count == 3 and empty_count == 2:
+                    score -= 10
+                elif opponent_count == 2 and empty_count == 3:
+                    score -= 5
 
-        # Fichas en el centro
-        center_cells = [board[1][1], board[1][3], board[3][1], board[3][3]]
-        for cell in center_cells:
-            if cell == symbol:
-                score += 10
-            elif cell == -symbol:
-                score -= 10
-
-        # Fichas en las esquinas
-        corner_cells = [board[0][0], board[0][4], board[4][0], board[4][4]]
-        for cell in corner_cells:
-            if cell == symbol:
-                score += 1
-            elif cell == -symbol:
-                score -= 1
-
+            for j in range(5):
+                if (i, j) in center_positions:
+                    if board[i][j] == symbol:
+                        score += 10
+                    elif board[i][j] == -symbol:
+                        score -= 10
+                elif (i, j) in corner_positions:
+                    if board[i][j] == symbol:
+                        score += 5
+                    elif board[i][j] == -symbol:
+                        score -= 5
+                else:
+                    if board[i][j] == symbol:
+                        score += 1
+                    elif board[i][j] == -symbol:
+                        score -= 1
+        
         return score
 
-
-print(" 0 : Cara neutra / 1: Marca de círculo / -1: Marca de cruz\n")
-
-bot = noche(1)
-initial_board = [[0] * 5 for _ in range(5)]  
-bot.board = bot.play_turn(initial_board)
