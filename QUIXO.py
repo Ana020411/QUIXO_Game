@@ -1,7 +1,7 @@
 import copy
 import math
 
-class Opcion1:
+class Quixxo:
     "---------------------------------------------  FUNCIONES BASICAS---------------------------------------------------------"
     def __init__(self, symbol):
        self.board = [[0] * 5 for _ in range(5)]
@@ -56,7 +56,7 @@ class Opcion1:
                row += 1
            new_board[4][col] = self.symbol
        return new_board
-   
+    "-----------------------------ACCIONES CON MOVIMIENTOS---------------------------------------------------------------------"
     def get_movements(self, row, col):
        movements = []
        if row == 0 and col == 0:
@@ -132,7 +132,7 @@ class Opcion1:
            return Heuristica.heu(board, self.symbol)
 
        if is_maximizing:
-           best_score = -math.inf
+           best_heuristic_value = -math.inf
            for i in range(5):
                for j in range(5):
                    if board[i][j] == 0 or board[i][j] == self.symbol:
@@ -143,16 +143,16 @@ class Opcion1:
                                if self.check_win(new_board, self.symbol):  # Checa victoria inmediata
                                    self.transposition_table[state_tuple] = 1
                                    return 1
-                               score = self.minimax(new_board, depth + 1, False, alpha, beta)
+                               heuristic_value = self.minimax(new_board, depth + 1, False, alpha, beta)
                                new_board = self.undo_move(new_board, i, j, move)
-                               best_score = max(score, best_score)
-                               alpha = max(alpha, best_score)
+                               best_heuristic_value = max(heuristic_value, best_heuristic_value)
+                               alpha = max(alpha, best_heuristic_value)
                                if beta <= alpha:
                                    break
-           self.transposition_table[state_tuple] = best_score
-           return best_score
+           self.transposition_table[state_tuple] = best_heuristic_value
+           return best_heuristic_value
        else:
-            best_score = math.inf
+            best_heuristic_value = math.inf
             for i in range(5):
                for j in range(5):
                    if board[i][j] == 0 or board[i][j] == -self.symbol:
@@ -163,18 +163,18 @@ class Opcion1:
                                 if self.check_win(new_board, -self.symbol):  # Checa victoria inmediata
                                     self.transposition_table[state_tuple] = -1
                                     return -1
-                                score = self.minimax(new_board, depth + 1, True, alpha, beta)
+                                heuristic_value = self.minimax(new_board, depth + 1, True, alpha, beta)
                                 new_board = self.undo_move(new_board, i, j, move)
-                                best_score = min(score, best_score)
-                                beta = min(beta, best_score)
+                                best_heuristic_value = min(heuristic_value, best_heuristic_value)
+                                beta = min(beta, best_heuristic_value)
                                 if beta <= alpha:
                                     break
-            self.transposition_table[state_tuple] = best_score
-            return best_score
+            self.transposition_table[state_tuple] = best_heuristic_value
+            return best_heuristic_value
 
         
     def get_best_move(self):
-        best_score = -math.inf
+        best_heuristic_value = -math.inf
         best_move = None
         alpha = -math.inf
         beta = math.inf
@@ -190,12 +190,12 @@ class Opcion1:
                                 new_board = self.apply_move(self.board, i, j, move)
                                 if self.check_win(new_board, self.symbol):  # Checa por la victoria inmediata
                                     return (i, j, move)
-                                score = self.minimax(new_board, 0, False, alpha, beta)
+                                heuristic_value = self.minimax(new_board, 0, False, alpha, beta)
                                 new_board = self.undo_move(new_board, i, j, move)
-                                if score > best_score:
-                                    best_score = score
+                                if heuristic_value > best_heuristic_value:
+                                    best_heuristic_value = heuristic_value
                                     best_move = (i, j, move)
-                                    alpha = max(alpha, best_score)
+                                    alpha = max(alpha, best_heuristic_value)
                                     if beta <= alpha:
                                         break
         return best_move
@@ -208,25 +208,23 @@ class Opcion1:
         self.print_board() 
                  
         return self.board
-    
+"--------------------------------------------CLASE DE HEURISTICA-------------------------------------------------"    
 class Heuristica:
     
     @staticmethod
     def count_line(line, symbol):
-        symbol_count = 0
-        empty_count = 0
+        symbol_cells = 0
+        clear_cells = 0
         for cell in line:
             if cell == symbol:
-                symbol_count += 1
+                symbol_cells += 1
             elif cell == 0:
-                empty_count += 1
-        return symbol_count, empty_count
+                clear_cells += 1
+        return symbol_cells, clear_cells
 
     @staticmethod
     def heu(board, symbol):
-        score = 0
-        
-        
+        heuristic_value = 0
         center_positions = {(1, 1), (1, 3), (3, 1), (3, 3)}
         corner_positions = {(0, 0), (0, 4), (4, 0), (4, 4)}
         
@@ -237,45 +235,45 @@ class Heuristica:
             diag1 = [board[i][i] for i in range(5)]
             diag2 = [board[i][4-i] for i in range(5)]
             
-            row_symbol_count, row_empty_count = Heuristica.count_line(row, symbol)
-            col_symbol_count, col_empty_count = Heuristica.count_line(col, symbol)
-            diag1_symbol_count, diag1_empty_count = Heuristica.count_line(diag1, symbol)
-            diag2_symbol_count, diag2_empty_count = Heuristica.count_line(diag2, symbol)
+            row_symbol_cells, row_clear_cells = Heuristica.count_line(row, symbol)
+            col_symbol_cells, col_clear_cells = Heuristica.count_line(col, symbol)
+            diag1_symbol_cells, diag1_clear_cells = Heuristica.count_line(diag1, symbol)
+            diag2_symbol_cells, diag2_clear_cells = Heuristica.count_line(diag2, symbol)
             
-            for symbol_count, empty_count in [(row_symbol_count, row_empty_count), (col_symbol_count, col_empty_count), 
-                                              (diag1_symbol_count, diag1_empty_count), (diag2_symbol_count, diag2_empty_count)]:
-                if symbol_count == 5:
-                    score += 1000
-                elif symbol_count == 4 and empty_count == 1:
-                    score += 100
-                elif symbol_count == 3 and empty_count == 2:
-                    score += 10
-                elif symbol_count == 2 and empty_count == 3:
-                    score += 5
-                opponent_count = 4 - symbol_count
-                if opponent_count == 4 and empty_count == 1:
-                    score -= 100
-                elif opponent_count == 3 and empty_count == 2:
-                    score -= 10
-                elif opponent_count == 2 and empty_count == 3:
-                    score -= 5
+            for symbol_cells, clear_cells in [(row_symbol_cells, row_clear_cells), (col_symbol_cells, col_clear_cells), 
+                                              (diag1_symbol_cells, diag1_clear_cells), (diag2_symbol_cells, diag2_clear_cells)]:
+                if symbol_cells == 5:
+                    heuristic_value += 1000
+                elif symbol_cells == 4 and clear_cells == 1:
+                    heuristic_value += 100
+                elif symbol_cells == 3 and clear_cells == 2:
+                    heuristic_value += 10
+                elif symbol_cells == 2 and clear_cells == 3:
+                    heuristic_value += 5
+                opponent_count = 4 - symbol_cells
+                if opponent_count == 4 and clear_cells == 1:
+                    heuristic_value -= 100
+                elif opponent_count == 3 and clear_cells == 2:
+                    heuristic_value -= 10
+                elif opponent_count == 2 and clear_cells == 3:
+                    heuristic_value -= 5
 
             for j in range(5):
                 if (i, j) in center_positions:
                     if board[i][j] == symbol:
-                        score += 10
+                        heuristic_value += 10
                     elif board[i][j] == -symbol:
-                        score -= 10
+                        heuristic_value -= 10
                 elif (i, j) in corner_positions:
                     if board[i][j] == symbol:
-                        score += 5
+                        heuristic_value += 5
                     elif board[i][j] == -symbol:
-                        score -= 5
+                        heuristic_value -= 5
                 else:
                     if board[i][j] == symbol:
-                        score += 1
+                        heuristic_value += 1
                     elif board[i][j] == -symbol:
-                        score -= 1
+                        heuristic_value -= 1
         
-        return score
+        return heuristic_value
 
