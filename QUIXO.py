@@ -132,7 +132,7 @@ class Quixxo:
            return Heuristica.heu(board, self.symbol)
 
        if is_maximizing:
-           best_heuristic_value = -math.inf
+           best_value = -math.inf
            for i in range(5):
                for j in range(5):
                    if board[i][j] == 0 or board[i][j] == self.symbol:
@@ -143,16 +143,16 @@ class Quixxo:
                                if self.check_win(new_board, self.symbol):  # Checa victoria inmediata
                                    self.transposition_table[state_tuple] = 1
                                    return 1
-                               heuristic_value = self.minimax(new_board, depth + 1, False, alpha, beta)
+                               value = self.minimax(new_board, depth + 1, False, alpha, beta)
                                new_board = self.undo_move(new_board, i, j, move)
-                               best_heuristic_value = max(heuristic_value, best_heuristic_value)
-                               alpha = max(alpha, best_heuristic_value)
+                               best_value = max(value, best_value)
+                               alpha = max(alpha, best_value)
                                if beta <= alpha:
                                    break
-           self.transposition_table[state_tuple] = best_heuristic_value
-           return best_heuristic_value
+           self.transposition_table[state_tuple] = best_value
+           return best_value
        else:
-            best_heuristic_value = math.inf
+            best_value = math.inf
             for i in range(5):
                for j in range(5):
                    if board[i][j] == 0 or board[i][j] == -self.symbol:
@@ -163,18 +163,18 @@ class Quixxo:
                                 if self.check_win(new_board, -self.symbol):  # Checa victoria inmediata
                                     self.transposition_table[state_tuple] = -1
                                     return -1
-                                heuristic_value = self.minimax(new_board, depth + 1, True, alpha, beta)
+                                value = self.minimax(new_board, depth + 1, True, alpha, beta)
                                 new_board = self.undo_move(new_board, i, j, move)
-                                best_heuristic_value = min(heuristic_value, best_heuristic_value)
-                                beta = min(beta, best_heuristic_value)
+                                best_value = min(value, best_value)
+                                beta = min(beta, best_value)
                                 if beta <= alpha:
                                     break
-            self.transposition_table[state_tuple] = best_heuristic_value
-            return best_heuristic_value
+            self.transposition_table[state_tuple] = best_value
+            return best_value
 
         
     def get_best_move(self):
-        best_heuristic_value = -math.inf
+        best_value = -math.inf
         best_move = None
         alpha = -math.inf
         beta = math.inf
@@ -190,12 +190,12 @@ class Quixxo:
                                 new_board = self.apply_move(self.board, i, j, move)
                                 if self.check_win(new_board, self.symbol):  # Checa por la victoria inmediata
                                     return (i, j, move)
-                                heuristic_value = self.minimax(new_board, 0, False, alpha, beta)
+                                value = self.minimax(new_board, 0, False, alpha, beta)
                                 new_board = self.undo_move(new_board, i, j, move)
-                                if heuristic_value > best_heuristic_value:
-                                    best_heuristic_value = heuristic_value
+                                if value > best_value:
+                                    best_value = value
                                     best_move = (i, j, move)
-                                    alpha = max(alpha, best_heuristic_value)
+                                    alpha = max(alpha, best_value)
                                     if beta <= alpha:
                                         break
         return best_move
@@ -224,7 +224,7 @@ class Heuristica:
 
     @staticmethod
     def heu(board, symbol):
-        heuristic_value = 0
+        value = 0
         center_positions = {(1, 1), (1, 3), (3, 1), (3, 3)}
         corner_positions = {(0, 0), (0, 4), (4, 0), (4, 4)}
         
@@ -243,37 +243,37 @@ class Heuristica:
             for symbol_cells, clear_cells in [(row_symbol_cells, row_clear_cells), (col_symbol_cells, col_clear_cells), 
                                               (diag1_symbol_cells, diag1_clear_cells), (diag2_symbol_cells, diag2_clear_cells)]:
                 if symbol_cells == 5:
-                    heuristic_value += 1000
+                    value += 1000
                 elif symbol_cells == 4 and clear_cells == 1:
-                    heuristic_value += 100
+                    value += 100
                 elif symbol_cells == 3 and clear_cells == 2:
-                    heuristic_value += 10
+                    value += 10
                 elif symbol_cells == 2 and clear_cells == 3:
-                    heuristic_value += 5
+                    value += 5
                 opponent_count = 4 - symbol_cells
                 if opponent_count == 4 and clear_cells == 1:
-                    heuristic_value -= 100
+                    value -= 100
                 elif opponent_count == 3 and clear_cells == 2:
-                    heuristic_value -= 10
+                    value -= 10
                 elif opponent_count == 2 and clear_cells == 3:
-                    heuristic_value -= 5
+                    value -= 5
 
             for j in range(5):
                 if (i, j) in center_positions:
                     if board[i][j] == symbol:
-                        heuristic_value += 10
+                        value += 10
                     elif board[i][j] == -symbol:
-                        heuristic_value -= 10
+                        value -= 10
                 elif (i, j) in corner_positions:
                     if board[i][j] == symbol:
-                        heuristic_value += 5
+                        value += 5
                     elif board[i][j] == -symbol:
-                        heuristic_value -= 5
+                        value -= 5
                 else:
                     if board[i][j] == symbol:
-                        heuristic_value += 1
+                        value += 1
                     elif board[i][j] == -symbol:
-                        heuristic_value -= 1
+                        value -= 1
         
-        return heuristic_value
+        return value
 
